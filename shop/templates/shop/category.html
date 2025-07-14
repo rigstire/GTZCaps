@@ -1,0 +1,156 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}{{ category }} - GTZ CAPS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item">
+                    <a href="{% url 'shop:home' %}">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                </li>
+                <li class="breadcrumb-item active" aria-current="page">
+                    {{ category }}
+                </li>
+            </ol>
+        </nav>
+        
+        <h1 class="display-4 mb-4">
+            {{ category }}
+            <small class="text-muted ms-3" style="font-size: 1.5rem; font-family: 'Changa', sans-serif;">
+                ({{ hats|length }} hat{{ hats|length|pluralize }} available)
+            </small>
+        </h1>
+    </div>
+</div>
+
+{% if hats %}
+    <div class="row">
+        {% for hat in hats %}
+            <div class="col-md-4 col-lg-3 mb-4">
+                <div class="hat-image-card" onclick="location.href='{% url 'shop:hat_detail' hat.id %}'">
+                    <!-- Dripping effects -->
+                    <div class="dripping-effect">
+                        <div class="drip"></div>
+                        <div class="drip"></div>
+                        <div class="drip"></div>
+                    </div>
+                    <div class="dripping-effect-left">
+                        <div class="drip-left"></div>
+                        <div class="drip-left"></div>
+                        <div class="drip-left"></div>
+                    </div>
+                    
+                    <!-- Hat Image -->
+                    {% if hat.hat_picture %}
+                        <img src="{{ hat.hat_picture.url }}" alt="{{ hat.hat_name }}">
+                    {% else %}
+                        <div class="hat-image-placeholder">
+                            <i class="fas fa-hat-wizard fa-4x"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Price/Sold Out Overlay -->
+                    {% if hat.sold_out %}
+                        <div class="sold-out-overlay">
+                            <i class="fas fa-skull-crossbones"></i> SOLD OUT
+                        </div>
+                    {% else %}
+                        <div class="price-overlay">
+                            <i class="fas fa-dollar-sign"></i>{{ hat.price }}
+                        </div>
+                    {% endif %}
+                    
+                    <!-- Cart Icon -->
+                    {% if not hat.sold_out %}
+                        <div class="cart-icon" onclick="event.stopPropagation(); addToCart({{ hat.id }})">
+                            <i class="fas fa-cart-plus"></i>
+                        </div>
+                    {% else %}
+                        <div class="cart-icon disabled">
+                            <i class="fas fa-ban"></i>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Back to Home -->
+    <div class="row mt-5">
+        <div class="col-12 text-center">
+            <a href="{% url 'shop:home' %}" class="btn btn-outline-primary btn-lg" style="padding: 15px 30px; font-size: 1.2rem; font-weight: 700;">
+                <i class="fas fa-arrow-left"></i> BACK TO ALL CATEGORIES
+            </a>
+        </div>
+    </div>
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card text-center" style="border: 2px solid var(--primary-red); background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray));">
+                <div class="card-body py-5">
+                    <i class="fas fa-hat-wizard fa-5x mb-4" style="color: var(--primary-red); opacity: 0.5;"></i>
+                    <h4 style="color: var(--primary-red); font-family: 'Metal Mania', cursive; font-size: 2.5rem;">
+                        NO HATS FOUND
+                    </h4>
+                    <p class="text-muted mb-4" style="color: var(--silver) !important; font-size: 1.2rem;">
+                        There are currently no hats in the "{{ category }}" category.
+                    </p>
+                    <a href="{% url 'shop:home' %}" class="btn btn-primary btn-lg" style="padding: 15px 30px; font-size: 1.2rem; font-weight: 700;">
+                        BROWSE ALL HATS
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addToCart(hatId) {
+    // Create a form and submit it
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/add-to-cart/${hatId}/`;
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken.value;
+        form.appendChild(csrfInput);
+    } else {
+        // Try to get CSRF token from cookie
+        const csrfCookie = document.cookie.split(';').find(row => row.trim().startsWith('csrftoken='));
+        if (csrfCookie) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfCookie.split('=')[1];
+            form.appendChild(csrfInput);
+        }
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Add CSRF token to the page for the add to cart function
+document.addEventListener('DOMContentLoaded', function() {
+    // Create a hidden CSRF token input if it doesn't exist
+    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+        document.body.appendChild(csrfInput);
+    }
+});
+</script>
+{% endblock %} 

@@ -1,0 +1,282 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}{{ hat.hat_name }} - GTZ CAPS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        <!-- Hat Image Carousel -->
+        <div class="card" style="border: 2px solid var(--primary-red); background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray));">
+            {% if hat.hat_picture or hat.description_pic1 or hat.description_pic2 or hat.description_pic3 %}
+                <div id="hatImageCarousel" class="carousel slide" data-bs-ride="carousel" style="border-radius: 15px;">
+                    <!-- Carousel Indicators -->
+                    <div class="carousel-indicators">
+                        {% if hat.hat_picture %}
+                            <button type="button" data-bs-target="#hatImageCarousel" data-bs-slide-to="0" class="active" aria-current="true" aria-label="Main Image"></button>
+                        {% endif %}
+                        {% if hat.description_pic1 %}
+                            <button type="button" data-bs-target="#hatImageCarousel" data-bs-slide-to="{% if hat.hat_picture %}1{% else %}0{% endif %}" {% if not hat.hat_picture %}class="active" aria-current="true"{% endif %} aria-label="Description Image 1"></button>
+                        {% endif %}
+                        {% if hat.description_pic2 %}
+                            <button type="button" data-bs-target="#hatImageCarousel" data-bs-slide-to="{% if hat.hat_picture and hat.description_pic1 %}2{% elif hat.hat_picture or hat.description_pic1 %}1{% else %}0{% endif %}" {% if not hat.hat_picture and not hat.description_pic1 %}class="active" aria-current="true"{% endif %} aria-label="Description Image 2"></button>
+                        {% endif %}
+                        {% if hat.description_pic3 %}
+                            <button type="button" data-bs-target="#hatImageCarousel" data-bs-slide-to="{% if hat.hat_picture and hat.description_pic1 and hat.description_pic2 %}3{% elif hat.hat_picture and hat.description_pic1 or hat.hat_picture and hat.description_pic2 or hat.description_pic1 and hat.description_pic2 %}2{% elif hat.hat_picture or hat.description_pic1 or hat.description_pic2 %}1{% else %}0{% endif %}" {% if not hat.hat_picture and not hat.description_pic1 and not hat.description_pic2 %}class="active" aria-current="true"{% endif %} aria-label="Description Image 3"></button>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Carousel Items -->
+                    <div class="carousel-inner" style="border-radius: 15px 15px 0 0;">
+                        {% if hat.hat_picture %}
+                            <div class="carousel-item active">
+                                <img src="{{ hat.hat_picture.url }}" class="d-block w-100" alt="{{ hat.hat_name }}" style="height: 500px; object-fit: cover;">
+                            </div>
+                        {% endif %}
+                        
+                        {% if hat.description_pic1 %}
+                            <div class="carousel-item {% if not hat.hat_picture %}active{% endif %}">
+                                <img src="{{ hat.description_pic1.url }}" class="d-block w-100" alt="{{ hat.hat_name }} - Description 1" style="height: 500px; object-fit: cover;">
+                            </div>
+                        {% endif %}
+                        
+                        {% if hat.description_pic2 %}
+                            <div class="carousel-item {% if not hat.hat_picture and not hat.description_pic1 %}active{% endif %}">
+                                <img src="{{ hat.description_pic2.url }}" class="d-block w-100" alt="{{ hat.hat_name }} - Description 2" style="height: 500px; object-fit: cover;">
+                            </div>
+                        {% endif %}
+                        
+                        {% if hat.description_pic3 %}
+                            <div class="carousel-item {% if not hat.hat_picture and not hat.description_pic1 and not hat.description_pic2 %}active{% endif %}">
+                                <img src="{{ hat.description_pic3.url }}" class="d-block w-100" alt="{{ hat.hat_name }} - Description 3" style="height: 500px; object-fit: cover;">
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <!-- Carousel Controls -->
+                    <button class="carousel-control-prev" type="button" data-bs-target="#hatImageCarousel" data-bs-slide="prev" style="width: 5%;">
+                        <span class="carousel-control-prev-icon" aria-hidden="true" style="background-image: none; width: 40px; height: 40px; background: rgba(204, 0, 0, 0.8); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-chevron-left" style="color: white; font-size: 1.2rem;"></i>
+                        </span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#hatImageCarousel" data-bs-slide="next" style="width: 5%;">
+                        <span class="carousel-control-next-icon" aria-hidden="true" style="background-image: none; width: 40px; height: 40px; background: rgba(204, 0, 0, 0.8); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                            <i class="fas fa-chevron-right" style="color: white; font-size: 1.2rem;"></i>
+                        </span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                </div>
+            {% else %}
+                <div class="card-body text-center py-5" style="background: linear-gradient(135deg, #000000, #1a1a1a); min-height: 500px; display: flex; align-items: center; justify-content: center; flex-direction: column;">
+                    <i class="fas fa-hat-wizard fa-5x mb-3" style="color: var(--primary-red); opacity: 0.7;"></i>
+                    <p class="text-muted" style="color: var(--silver) !important; font-size: 1.2rem;">No Images Available</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card" style="border: 2px solid var(--primary-red); background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray));">
+            <div class="card-body p-4">
+                <h1 class="card-title h2 mb-3" style="color: var(--white); font-family: 'Metal Mania', cursive; font-size: 2.5rem; text-shadow: 0 0 10px var(--primary-red);">
+                    {{ hat.hat_name }}
+                </h1>
+                
+                <div class="mb-4">
+                    <span class="badge" style="font-size: 1.1rem; padding: 10px 20px;">
+                        <i class="fas fa-tag"></i> {{ hat.hat_category }}
+                    </span>
+                </div>
+                
+                <div class="mb-4">
+                    {% if hat.sold_out %}
+                        <h3 class="sold-out" style="font-size: 2rem;">
+                            <i class="fas fa-skull-crossbones"></i> SOLD OUT
+                        </h3>
+                    {% else %}
+                        <h3 class="price" style="font-size: 2.5rem;">
+                            <i class="fas fa-dollar-sign"></i>{{ hat.price }}
+                        </h3>
+                    {% endif %}
+                </div>
+                
+                {% if hat.description %}
+                    <div class="mb-4">
+                        <h5 style="color: var(--white); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                            <i class="fas fa-scroll"></i> Description
+                        </h5>
+                        <p class="text-muted" style="color: var(--silver) !important; font-size: 1.1rem; line-height: 1.6;">
+                            {{ hat.description }}
+                        </p>
+                    </div>
+                {% endif %}
+                
+                <div class="mb-4">
+                    <h5 style="color: var(--white); font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+                        <i class="fas fa-info-circle"></i> Details
+                    </h5>
+                    <div style="background: rgba(0,0,0,0.3); padding: 20px; border-radius: 10px; border: 1px solid var(--medium-gray);">
+                        <div class="row">
+                            <div class="col-6">
+                                <strong style="color: var(--silver);">Category:</strong>
+                                <br><span style="color: var(--white);">{{ hat.hat_category }}</span>
+                            </div>
+                            <div class="col-6">
+                                <strong style="color: var(--silver);">Price:</strong>
+                                <br><span style="color: var(--white);">${{ hat.price }}</span>
+                            </div>
+                        </div>
+                        <div class="row mt-3">
+                            <div class="col-6">
+                                <strong style="color: var(--silver);">Status:</strong>
+                                <br>
+                                {% if hat.sold_out %}
+                                    <span class="text-danger" style="color: var(--blood-red) !important;">
+                                        <i class="fas fa-skull"></i> Out of Stock
+                                    </span>
+                                {% else %}
+                                    <span class="text-success" style="color: var(--white) !important;">
+                                        <i class="fas fa-check-circle"></i> In Stock
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <div class="col-6">
+                                <strong style="color: var(--silver);">Added:</strong>
+                                <br><span style="color: var(--silver);">{{ hat.created_at|date:"F j, Y" }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="d-grid gap-3">
+                    {% if not hat.sold_out %}
+                        <form method="post" action="{% url 'shop:add_to_cart' hat.id %}">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-success btn-lg w-100" style="padding: 15px; font-size: 1.2rem; font-weight: 700;">
+                                <i class="fas fa-cart-plus"></i> ADD TO CART
+                            </button>
+                        </form>
+                    {% else %}
+                        <button class="btn btn-secondary btn-lg w-100" disabled style="padding: 15px; font-size: 1.2rem;">
+                            <i class="fas fa-skull-crossbones"></i> OUT OF STOCK
+                        </button>
+                    {% endif %}
+                    
+                    <a href="{% url 'shop:home' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-arrow-left"></i> BACK TO COLLECTION
+                    </a>
+                    
+                    <a href="{% url 'shop:category' hat.hat_category %}" class="btn btn-outline-secondary btn-lg">
+                        MORE IN {{ hat.hat_category }}
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Related Hats Section -->
+{% if related_hats %}
+<div class="row mt-5">
+    <div class="col-12">
+        <h3 class="category-header" style="font-size: 2rem;">
+            <i class="fas fa-fire"></i> MORE IN {{ hat.hat_category }}
+        </h3>
+    </div>
+</div>
+
+<div class="row">
+    {% for related_hat in related_hats %}
+        <div class="col-md-3 mb-4">
+            <div class="card hat-card h-100" style="background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray)); border: 1px solid var(--primary-red);">
+                {% if related_hat.hat_picture %}
+                    <img src="{{ related_hat.hat_picture.url }}" class="card-img-top" alt="{{ related_hat.hat_name }}" style="height: 200px; object-fit: cover;">
+                {% else %}
+                    <div class="card-img-top d-flex align-items-center justify-content-center" style="height: 200px; background: linear-gradient(135deg, #000000, #1a1a1a);">
+                        <i class="fas fa-hat-wizard fa-3x" style="color: var(--primary-red); opacity: 0.7;"></i>
+                    </div>
+                {% endif %}
+                <div class="card-body d-flex flex-column">
+                    <h6 class="card-title text-uppercase" style="color: var(--white); font-weight: 600;">
+                        {{ related_hat.hat_name }}
+                    </h6>
+                    <div class="mt-auto">
+                        <div class="mb-2">
+                            {% if related_hat.sold_out %}
+                                <span class="sold-out small">
+                                    <i class="fas fa-skull-crossbones"></i> SOLD OUT
+                                </span>
+                            {% else %}
+                                <span class="price small" style="font-size: 1.1rem;">
+                                    <i class="fas fa-dollar-sign"></i>{{ related_hat.price }}
+                                </span>
+                            {% endif %}
+                        </div>
+                        <div class="d-grid">
+                            <a href="{% url 'shop:hat_detail' related_hat.id %}" class="btn btn-outline-primary btn-sm">
+                                <i class="fas fa-eye"></i> VIEW DETAILS
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endfor %}
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<style>
+/* Custom carousel indicator styling */
+.carousel-indicators [data-bs-target] {
+    background-color: var(--primary-red);
+    border: 2px solid var(--white);
+    border-radius: 50%;
+    width: 15px;
+    height: 15px;
+    opacity: 0.6;
+    transition: all 0.3s ease;
+}
+
+.carousel-indicators .active {
+    opacity: 1;
+    box-shadow: 0 0 10px var(--primary-red);
+}
+
+.carousel-indicators [data-bs-target]:hover {
+    opacity: 0.8;
+    transform: scale(1.1);
+}
+
+/* Carousel control hover effects */
+.carousel-control-prev:hover .carousel-control-prev-icon,
+.carousel-control-next:hover .carousel-control-next-icon {
+    background: var(--primary-red) !important;
+    transform: scale(1.1);
+    box-shadow: 0 0 15px var(--primary-red);
+}
+</style>
+
+<script>
+// Add some interactivity for the add to cart button
+document.addEventListener('DOMContentLoaded', function() {
+    const addToCartForm = document.querySelector('form[action*="add-to-cart"]');
+    if (addToCartForm) {
+        addToCartForm.addEventListener('submit', function(e) {
+            const button = this.querySelector('button[type="submit"]');
+            const originalText = button.innerHTML;
+            
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ADDING TO CART...';
+            button.disabled = true;
+            
+            // Re-enable after a short delay (for visual feedback)
+            setTimeout(function() {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }, 1000);
+        });
+    }
+});
+</script>
+{% endblock %} 

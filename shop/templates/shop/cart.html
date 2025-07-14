@@ -1,0 +1,188 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}SHOPPING CART - GTZ CAPS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="display-4 mb-4">
+            <i class="fas fa-shopping-cart"></i> SHOPPING CART
+        </h1>
+    </div>
+</div>
+
+{% if cart_items %}
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card" style="border: 2px solid var(--primary-red); background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray));">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--black), var(--dark-gray)); border-bottom: 2px solid var(--primary-red);">
+                    <h5 class="mb-0" style="color: var(--primary-red); font-weight: 700; text-transform: uppercase;">
+                        CART ITEMS ({{ cart_count }})
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    {% for item in cart_items %}
+                        <div class="row align-items-center py-4" style="{% if not forloop.last %}border-bottom: 1px solid var(--medium-gray);{% endif %}">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <div class="me-3">
+                                        {% if item.image_url %}
+                                            <img src="{{ item.image_url }}" alt="{{ item.hat_name }}" style="width: 80px; height: 80px; object-fit: cover; border-radius: 12px; border: 2px solid var(--primary-red);">
+                                        {% else %}
+                                            <div style="width: 80px; height: 80px; background: linear-gradient(135deg, #000000, #1a1a1a); border-radius: 12px; border: 2px solid var(--primary-red); display: flex; align-items: center; justify-content: center;">
+                                                <i class="fas fa-hat-wizard fa-2x" style="color: var(--primary-red); opacity: 0.7;"></i>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-1" style="color: var(--white); font-weight: 700; text-transform: uppercase;">
+                                            {{ item.hat_name }}
+                                        </h6>
+                                        <small class="text-muted" style="color: var(--silver) !important;">
+                                            <i class="fas fa-tag"></i> {{ item.hat_category }}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2 text-center">
+                                <span class="price" style="font-size: 1.1rem;">${{ item.price }}</span>
+                            </div>
+                            
+                            <div class="col-md-2 text-center">
+                                <form method="post" action="{% url 'shop:update_cart_quantity' item.hat_id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <div class="input-group input-group-sm" style="max-width: 120px;">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="decreaseQuantity('{{ item.hat_id }}')" style="border-color: var(--primary-red); color: var(--primary-red);">
+                                            <i class="fas fa-minus"></i>
+                                        </button>
+                                        <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="99" class="form-control text-center" id="quantity-{{ item.hat_id }}" onchange="this.form.submit()" style="font-weight: 600;">
+                                        <button type="button" class="btn btn-outline-secondary" onclick="increaseQuantity('{{ item.hat_id }}')" style="border-color: var(--primary-red); color: var(--primary-red);">
+                                            <i class="fas fa-plus"></i>
+                                        </button>
+                                    </div>
+                                </form>
+                            </div>
+                            
+                            <div class="col-md-2 text-center">
+                                <strong class="price" style="font-size: 1.2rem;">${{ item.total|floatformat:2 }}</strong>
+                            </div>
+                            
+                            <div class="col-md-12 col-lg-1 text-center mt-2 mt-md-0">
+                                <form method="post" action="{% url 'shop:remove_from_cart' item.hat_id %}" class="d-inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Remove this item from cart?')" style="border-color: var(--blood-red); color: var(--blood-red);">
+                                        <i class="fas fa-skull-crossbones"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="card" style="border: 2px solid var(--primary-red); background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray));">
+                <div class="card-header" style="background: linear-gradient(135deg, var(--black), var(--dark-gray)); border-bottom: 2px solid var(--primary-red);">
+                    <h5 class="mb-0" style="color: var(--primary-red); font-weight: 700; text-transform: uppercase;">
+                        <i class="fas fa-calculator"></i> ORDER SUMMARY
+                    </h5>
+                </div>
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between mb-3" style="padding: 10px 0; border-bottom: 1px solid var(--medium-gray);">
+                        <span style="color: var(--silver); font-weight: 600;">Subtotal:</span>
+                        <span class="price" style="font-size: 1.1rem;">${{ total_price|floatformat:2 }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3" style="padding: 10px 0; border-bottom: 1px solid var(--medium-gray);">
+                        <span style="color: var(--silver); font-weight: 600;">Shipping:</span>
+                        <span style="color: var(--primary-red); font-weight: 600;">FREE</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-4" style="padding: 10px 0; border-bottom: 1px solid var(--medium-gray);">
+                        <span style="color: var(--silver); font-weight: 600;">Tax:</span>
+                        <span class="text-muted" style="color: var(--silver) !important;">Calculated at checkout</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-4" style="padding: 15px 0; background: rgba(204, 0, 0, 0.1); border-radius: 8px; border: 1px solid var(--primary-red);">
+                        <strong style="color: var(--white); font-size: 1.2rem; margin-left: 10px;">TOTAL:</strong>
+                        <strong class="price" style="font-size: 1.5rem; margin-right: 10px;">${{ total_price|floatformat:2 }}</strong>
+                    </div>
+                    
+                    <div class="d-grid gap-3">
+                        <button class="btn btn-success btn-lg" onclick="alert('Checkout functionality coming soon!')" style="padding: 15px; font-size: 1.2rem; font-weight: 700;">
+                            <i class="fas fa-credit-card"></i> PROCEED TO CHECKOUT
+                        </button>
+                        <a href="{% url 'shop:home' %}" class="btn btn-outline-primary btn-lg">
+                            <i class="fas fa-arrow-left"></i> CONTINUE SHOPPING
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Cart Actions -->
+            <div class="card mt-4" style="border: 2px solid var(--primary-red); background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray));">
+                <div class="card-body p-4">
+                    <h6 class="card-title mb-3" style="color: var(--primary-red); font-weight: 700; text-transform: uppercase;">
+                        <i class="fas fa-cog"></i> CART ACTIONS
+                    </h6>
+                    <div class="d-grid gap-2">
+                        <button class="btn btn-outline-secondary" onclick="alert('Save for later functionality coming soon!')" style="border-color: var(--silver); color: var(--silver);">
+                            <i class="fas fa-bookmark"></i> SAVE FOR LATER
+                        </button>
+                        <button class="btn btn-outline-danger" onclick="clearCart()" style="border-color: var(--blood-red); color: var(--blood-red);">
+                            <i class="fas fa-skull"></i> CLEAR CART
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card text-center" style="border: 2px solid var(--primary-red); background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray));">
+                <div class="card-body py-5">
+                    <i class="fas fa-shopping-cart fa-5x mb-4" style="color: var(--primary-red); opacity: 0.5;"></i>
+                    <h4 style="color: var(--primary-red); font-family: 'Metal Mania', cursive; font-size: 2.5rem;">
+                        YOUR CART IS EMPTY
+                    </h4>
+                    <p class="text-muted mb-4" style="color: var(--silver) !important; font-size: 1.2rem;">
+                        You need drip... Add some to your collection!
+                    </p>
+                    <a href="{% url 'shop:home' %}" class="btn btn-primary btn-lg" style="padding: 15px 30px; font-size: 1.2rem; font-weight: 700;">
+                        START SHOPPING
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+function increaseQuantity(hatId) {
+    const input = document.getElementById('quantity-' + hatId);
+    const currentValue = parseInt(input.value);
+    if (currentValue < 99) {
+        input.value = currentValue + 1;
+        input.form.submit();
+    }
+}
+
+function decreaseQuantity(hatId) {
+    const input = document.getElementById('quantity-' + hatId);
+    const currentValue = parseInt(input.value);
+    if (currentValue > 1) {
+        input.value = currentValue - 1;
+        input.form.submit();
+    }
+}
+
+function clearCart() {
+    if (confirm('Are you sure you want to clear your entire cart? This action cannot be undone.')) {
+        // This would need to be implemented as a proper view
+        alert('Clear cart functionality would be implemented here');
+    }
+}
+</script>
+{% endblock %} 

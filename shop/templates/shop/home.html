@@ -1,0 +1,167 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}GTZ CAPS - Unleash Your Style{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12 text-center">
+        <h1 class="display-4">
+            <i class="fas fa-hat-wizard"></i> GTZ CAPS COLLECTION
+        </h1>
+        <p class="lead mb-5">Premuim Quality Caps</p>
+    </div>
+</div>
+
+{% if hats_by_category %}
+    {% for category, hats in hats_by_category.items %}
+        <div class="row mb-5">
+            <div class="col-12">
+                <h2 class="category-header">
+                    {{ category }}
+                    <small class="text-muted ms-3" style="font-size: 1.2rem; font-family: 'Changa', sans-serif;">
+                        ({{ hats|length }} hat{{ hats|length|pluralize }} available)
+                    </small>
+                    <a href="{% url 'shop:category' category %}" class="btn btn-outline-primary btn-lg ms-4">
+                         VIEW ALL
+                    </a>
+                </h2>
+            </div>
+        </div>
+        
+        <div class="row mb-5">
+            {% for hat in hats %}
+                <div class="col-md-4 col-lg-3 mb-4">
+                    <div class="hat-image-card" onclick="location.href='{% url 'shop:hat_detail' hat.id %}'">
+                        <!-- Hat Image -->
+                        {% if hat.hat_picture %}
+                            <img src="{{ hat.hat_picture.url }}" alt="{{ hat.hat_name }}">
+                        {% else %}
+                            <div class="hat-image-placeholder">
+                                <i class="fas fa-hat-wizard fa-4x"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Price/Sold Out Overlay -->
+                        {% if hat.sold_out %}
+                            <div class="sold-out-overlay">
+                                <i class="fas fa-skull-crossbones"></i> SOLD OUT
+                            </div>
+                        {% else %}
+                            <div class="price-overlay">
+                                <i class="fas fa-dollar-sign"></i>{{ hat.price }}
+                            </div>
+                        {% endif %}
+                        
+                        <!-- Cart Icon -->
+                        {% if not hat.sold_out %}
+                            <div class="cart-icon" onclick="event.stopPropagation(); addToCart({{ hat.id }})">
+                                <i class="fas fa-cart-plus"></i>
+                            </div>
+                        {% else %}
+                            <div class="cart-icon disabled">
+                                <i class="fas fa-ban"></i>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+{% else %}
+    <div class="row">
+        <div class="col-12">
+            <div class="card text-center" style="background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray)); border: 2px solid var(--primary-red);">
+                <div class="card-body py-5">
+                    <i class="fas fa-hat-wizard fa-5x text-muted mb-4" style="color: var(--primary-red); opacity: 0.5;"></i>
+                    <h4 style="color: var(--primary-red); font-family: 'Metal Mania', cursive;">
+                        NO HATS AVAILABLE
+                    </h4>
+                    <p class="text-muted mb-4">The collection is being prepared... Check back soon for our demonic hat drops!</p>
+                    <a href="{% url 'shop:home' %}" class="btn btn-outline-primary btn-lg">
+                        <i class="fas fa-sync-alt"></i> REFRESH PAGE
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>  
+{% endif %}
+
+<!-- Featured Section -->
+<div class="row mt-5">
+    <div class="col-12">
+        <div class="card" style="background: linear-gradient(135deg, var(--dark-gray), rgba(204, 0, 0, 0.1)); border: 2px solid var(--primary-red);">
+            <div class="card-body text-center py-5">
+                <h3 style="color: var(--silver); font-family: 'Metal Mania', cursive; font-size: 2.5rem;">
+                    Best Brands
+                </h3>
+                <p class="lead mb-4" style="color: var(--silver);">
+                    Step into the darkness with GTZ CAPS - where every hat tells a story of rebellion and style.
+                </p>
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <i class="fas fa-box fa-3x mb-3" style="color: var(var(--silver));"></i>
+                        <h5 style="color: var(--white);">NEW DROPS</h5>
+                        <p style="color: var(--silver); font-size: 0.9rem;">Look out for new hats</p>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-crown fa-3x mb-3" style="color:  var(var(--silver));"></i>
+                        <h5 style="color: var(--white);">PREMIUM QUALITY</h5>
+                        <p style="color: var(--silver); font-size: 0.9rem;">Crafted with the finest materials</p>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-bolt fa-3x mb-3" style="color: var(var(--silver));"></i>
+                        <h5 style="color: var(--white);">FAST SHIPPING</h5>
+                        <p style="color: var(--silver); font-size: 0.9rem;">UPS shipping</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function addToCart(hatId) {
+    // Create a form and submit it
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/add-to-cart/${hatId}/`;
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfToken) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = csrfToken.value;
+        form.appendChild(csrfInput);
+    } else {
+        // Try to get CSRF token from cookie
+        const csrfCookie = document.cookie.split(';').find(row => row.trim().startsWith('csrftoken='));
+        if (csrfCookie) {
+            const csrfInput = document.createElement('input');
+            csrfInput.type = 'hidden';
+            csrfInput.name = 'csrfmiddlewaretoken';
+            csrfInput.value = csrfCookie.split('=')[1];
+            form.appendChild(csrfInput);
+        }
+    }
+    
+    document.body.appendChild(form);
+    form.submit();
+}
+
+// Add CSRF token to the page for the add to cart function
+document.addEventListener('DOMContentLoaded', function() {
+    // Create a hidden CSRF token input if it doesn't exist
+    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
+        const csrfInput = document.createElement('input');
+        csrfInput.type = 'hidden';
+        csrfInput.name = 'csrfmiddlewaretoken';
+        csrfInput.value = '{{ csrf_token }}';
+        document.body.appendChild(csrfInput);
+    }
+});
+</script>
+{% endblock %} 
