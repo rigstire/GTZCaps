@@ -2,7 +2,12 @@ from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db.models import Q
-from .models import Hat
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_POST
+import stripe
+import json
+from .models import Hat, Order
 
 # Create your views here.
 
@@ -156,4 +161,128 @@ def update_cart_quantity(request, hat_id):
         
         return redirect('shop:cart')
     
+    return redirect('shop:cart')
+
+# Set up Stripe
+stripe.api_key = settings.STRIPE_SECRET_KEY
+
+def checkout(request):
+    """Display checkout page with Stripe payment"""
+    cart = request.session.get('cart', {})
+    
+    if not cart:
+        messages.error(request, "Your cart is empty!")
+        return redirect('shop:cart')
+    
+    # Calculate totals
+    cart_items = []
+    total_price = 0
+    
+    for hat_id, item in cart.items():
+        item_total = item['price'] * item['quantity']
+        cart_items.append({
+            'hat_id': hat_id,
+            'hat_name': item['hat_name'],
+            'hat_category': item['hat_category'],
+            'price': item['price'],
+            'quantity': item['quantity'],
+            'total': item_total,
+            'image_url': item.get('image_url')
+        })
+        total_price += item_total
+    
+    context = {
+        'cart_items': cart_items,
+        'total_price': total_price,
+        'stripe_publishable_key': settings.STRIPE_PUBLISHABLE_KEY,
+        'total_cents': int(total_price * 100)  # Stripe uses cents
+    }
+    return render(request, 'shop/checkout.html', context)
+
+@csrf_exempt
+@require_POST
+def create_payment_intent(request):
+    """Create a Stripe PaymentIntent and save customer information"""
+    try:
+        data = json.loads(request.body)
+        cart = request.session.get('cart', {})
+        
+        if not cart:
+            return JsonResponse({'error': 'Cart is empty'}, status=400)
+        
+        # Calculate total
+        total_price = sum(item['price'] * item['quantity'] for item in cart.values())
+        
+        # Create PaymentIntent
+        intent = stripe.PaymentIntent.create(
+            amount=int(total_price * 100),  # Amount in cents
+            currency='usd',
+            metadata={
+                'cart_items': json.dumps(cart),
+                'customer_email': data.get('email', ''),
+                'customer_name': data.get('firstName', '') + ' ' + data.get('lastName', ''),
+                'customer_address': data.get('address', ''),
+                'customer_city': data.get('city', ''),
+                'customer_state': data.get('state', ''),
+                'customer_zip': data.get('zip', ''),
+            }
+        )
+        
+        # Save customer information to database
+        order = Order.objects.create(
+            email=data.get('email', ''),
+            first_name=data.get('firstName', ''),
+            last_name=data.get('lastName', ''),
+            address=data.get('address', ''),
+            city=data.get('city', ''),
+            state=data.get('state', ''),
+            zip_code=data.get('zip', ''),
+            country='US',
+            stripe_payment_intent_id=intent.id,
+            total_amount=total_price,
+            currency='USD',
+            payment_status='pending',
+            order_items=cart
+        )
+        
+        return JsonResponse({
+            'client_secret': intent.client_secret,
+            'order_id': order.id
+        })
+        
+    except Exception as e:
+        return JsonResponse({'error': str(e)}, status=400)
+
+def payment_success(request):
+    """Handle successful payment"""
+    # Get payment intent ID from query parameters
+    payment_intent_id = request.GET.get('payment_intent')
+    
+    if payment_intent_id:
+        try:
+            # Update order status to completed
+            order = Order.objects.get(stripe_payment_intent_id=payment_intent_id)
+            order.payment_status = 'completed'
+            order.save()
+            
+            # Store order ID in session for display
+            request.session['last_order_id'] = order.id
+            
+        except Order.DoesNotExist:
+            pass  # Handle gracefully if order not found
+    
+    # Clear the cart
+    request.session['cart'] = {}
+    request.session.modified = True
+    
+    messages.success(request, "Payment successful! Thank you for your purchase!")
+    
+    context = {
+        'success': True
+    }
+    return render(request, 'shop/payment_success.html', context)
+
+def payment_cancel(request):
+    """Handle cancelled payment"""
+    messages.error(request, "Payment was cancelled. Your cart is still available.")
     return redirect('shop:cart')

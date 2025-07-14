@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import Hat
+from .models import Hat, Order
 
 # Register your models here.
 
@@ -39,3 +39,40 @@ class HatAdmin(admin.ModelAdmin):
     
     hat_picture_preview.short_description = "Image Preview"
     hat_picture_preview.allow_tags = True
+
+@admin.register(Order)
+class OrderAdmin(admin.ModelAdmin):
+    list_display = ['id', 'full_name', 'email', 'total_amount', 'payment_status', 'created_at']
+    list_filter = ['payment_status', 'created_at', 'state', 'country']
+    search_fields = ['email', 'first_name', 'last_name', 'stripe_payment_intent_id']
+    readonly_fields = ['stripe_payment_intent_id', 'created_at', 'updated_at', 'order_items_display']
+    
+    fieldsets = (
+        ('Order Information', {
+            'fields': ('id', 'stripe_payment_intent_id', 'payment_status', 'total_amount', 'currency')
+        }),
+        ('Customer Information', {
+            'fields': ('email', 'first_name', 'last_name')
+        }),
+        ('Billing Address', {
+            'fields': ('address', 'city', 'state', 'zip_code', 'country')
+        }),
+        ('Order Items', {
+            'fields': ('order_items_display',)
+        }),
+        ('Timestamps', {
+            'fields': ('created_at', 'updated_at'),
+            'classes': ('collapse',)
+        }),
+    )
+    
+    def order_items_display(self, obj):
+        """Display order items in a readable format"""
+        items_html = "<ul>"
+        for item_id, item in obj.order_items.items():
+            items_html += f"<li><strong>{item['hat_name']}</strong> ({item['hat_category']}) - ${item['price']} x {item['quantity']} = ${item['price'] * item['quantity']}</li>"
+        items_html += "</ul>"
+        return items_html
+    
+    order_items_display.short_description = "Order Items"
+    order_items_display.allow_tags = True

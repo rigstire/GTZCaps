@@ -1,0 +1,63 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}Payment Success - GTZ CAPS{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card text-center" style="background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray)); border: 2px solid var(--primary-red);">
+            <div class="card-body py-5">
+                <i class="fas fa-check-circle fa-5x mb-4" style="color: var(--primary-red);"></i>
+                <h1 class="card-title mb-4" style="color: var(--white); font-family: 'Metal Mania', cursive;">
+                    Payment Successful!
+                </h1>
+                <p class="lead mb-4" style="color: var(--white);">
+                    Thank you for your purchase! Your order has been processed successfully.
+                </p>
+                <p style="color: var(--silver); font-size: 1.1rem;">
+                    You will receive an email confirmation shortly with your order details.
+                </p>
+                
+                <div class="mt-5">
+                    <a href="{% url 'shop:home' %}" class="btn btn-primary btn-lg me-3">
+                        <i class="fas fa-shopping-bag"></i> Continue Shopping
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center mt-4">
+    <div class="col-md-8">
+        <div class="card" style="background: linear-gradient(135deg, var(--dark-gray), rgba(204, 0, 0, 0.1)); border: 2px solid var(--primary-red);">
+            <div class="card-body text-center py-4">
+                <h3 style="color: var(--white); font-family: 'Metal Mania', cursive; font-size: 2rem;">
+                    <i class="fas fa-skull"></i> What's Next?
+                </h3>
+                <p class="lead mb-4" style="color: var(--white);">
+                    Your demonic headwear is being prepared for shipment!
+                </p>
+                
+                <div class="row text-center">
+                    <div class="col-md-4">
+                        <i class="fas fa-box fa-3x mb-3" style="color: var(--primary-red);"></i>
+                        <h5 style="color: var(--white);">PROCESSING</h5>
+                        <p style="color: var(--silver); font-size: 0.9rem;">Your order is being prepared</p>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-shipping-fast fa-3x mb-3" style="color: var(--primary-red);"></i>
+                        <h5 style="color: var(--white);">SHIPPING</h5>
+                        <p style="color: var(--silver); font-size: 0.9rem;">Fast UPS delivery</p>
+                    </div>
+                    <div class="col-md-4">
+                        <i class="fas fa-crown fa-3x mb-3" style="color: var(--primary-red);"></i>
+                        <h5 style="color: var(--white);">UNLEASH</h5>
+                        <p style="color: var(--silver); font-size: 0.9rem;">Your style awaits</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} 

@@ -1,0 +1,223 @@
+{% extends 'shop/base.html' %}
+
+{% block title %}Checkout - GTZ CAPS{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-8">
+        <div class="card" style="background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray)); border: 2px solid var(--primary-red);">
+            <div class="card-body">
+                <h2 class="card-title mb-4" style="color: var(--white); font-family: 'Metal Mania', cursive;">
+                    <i class="fas fa-credit-card"></i> Checkout
+                </h2>
+                
+                <!-- Customer Information -->
+                <form id="payment-form">
+                    <div class="mb-3">
+                        <label for="email" class="form-label" style="color: var(--white);">Email Address</label>
+                        <input type="email" class="form-control" id="email" name="email" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="firstName" class="form-label" style="color: var(--white);">First Name</label>
+                                <input type="text" class="form-control" id="firstName" name="firstName" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="lastName" class="form-label" style="color: var(--white);">Last Name</label>
+                                <input type="text" class="form-control" id="lastName" name="lastName" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label for="address" class="form-label" style="color: var(--white);">Address</label>
+                        <input type="text" class="form-control" id="address" name="address" required>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="city" class="form-label" style="color: var(--white);">City</label>
+                                <input type="text" class="form-control" id="city" name="city" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="state" class="form-label" style="color: var(--white);">State</label>
+                                <input type="text" class="form-control" id="state" name="state" required>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="mb-3">
+                                <label for="zip" class="form-label" style="color: var(--white);">ZIP Code</label>
+                                <input type="text" class="form-control" id="zip" name="zip" required>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Payment Information -->
+                    <h4 class="mt-4 mb-3" style="color: var(--white);">
+                        <i class="fas fa-lock"></i> Payment Information
+                    </h4>
+                    
+                    <div class="mb-3">
+                        <label class="form-label" style="color: var(--white);">Card Details</label>
+                        <div id="card-element" class="form-control" style="background: var(--dark-gray); border: 1px solid var(--medium-gray); color: var(--white); padding: 12px;">
+                            <!-- Stripe Elements will create form elements here -->
+                        </div>
+                        <div id="card-errors" role="alert" class="text-danger mt-2"></div>
+                    </div>
+                    
+                    <button type="submit" id="submit-button" class="btn btn-success btn-lg w-100" style="padding: 15px; font-size: 1.2rem;">
+                        <i class="fas fa-lock"></i> Pay ${{ total_price }}
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card" style="background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray)); border: 2px solid var(--primary-red);">
+            <div class="card-body">
+                <h4 class="card-title mb-4" style="color: var(--white);">
+                    <i class="fas fa-shopping-bag"></i> Order Summary
+                </h4>
+                
+                {% for item in cart_items %}
+                    <div class="d-flex justify-content-between align-items-center mb-3 pb-2" style="border-bottom: 1px solid var(--medium-gray);">
+                        <div>
+                            <h6 style="color: var(--white); margin: 0;">{{ item.hat_name }}</h6>
+                            <small style="color: var(--silver);">{{ item.hat_category }} × {{ item.quantity }}</small>
+                        </div>
+                        <span style="color: var(--white); font-weight: bold;">${{ item.total }}</span>
+                    </div>
+                {% endfor %}
+                
+                <div class="d-flex justify-content-between align-items-center mt-4 pt-3" style="border-top: 2px solid var(--primary-red);">
+                    <h5 style="color: var(--white); margin: 0;">Total:</h5>
+                    <h5 style="color: var(--white); margin: 0; font-weight: bold;">${{ total_price }}</h5>
+                </div>
+                
+                <div class="mt-4">
+                    <a href="{% url 'shop:cart' %}" class="btn btn-outline-secondary w-100 mb-2">
+                        <i class="fas fa-arrow-left"></i> Back to Cart
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="https://js.stripe.com/v3/"></script>
+<script>
+    // Initialize Stripe
+    const stripe = Stripe('{{ stripe_publishable_key }}');
+    const elements = stripe.elements();
+    
+    // Create card element
+    const cardElement = elements.create('card', {
+        style: {
+            base: {
+                color: '#ffffff',
+                fontFamily: '"Changa", sans-serif',
+                fontSize: '16px',
+                '::placeholder': {
+                    color: '#aab7c4'
+                }
+            },
+            invalid: {
+                color: '#fa755a',
+                iconColor: '#fa755a'
+            }
+        }
+    });
+    
+    cardElement.mount('#card-element');
+    
+    // Handle form submission
+    const form = document.getElementById('payment-form');
+    const submitButton = document.getElementById('submit-button');
+    
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        
+        submitButton.disabled = true;
+        submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+        
+        try {
+            // Create payment intent
+            const response = await fetch('{% url "shop:create_payment_intent" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    email: document.getElementById('email').value,
+                    firstName: document.getElementById('firstName').value,
+                    lastName: document.getElementById('lastName').value,
+                    address: document.getElementById('address').value,
+                    city: document.getElementById('city').value,
+                    state: document.getElementById('state').value,
+                    zip: document.getElementById('zip').value
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.error) {
+                throw new Error(data.error);
+            }
+            
+            // Confirm payment
+            const result = await stripe.confirmCardPayment(data.client_secret, {
+                payment_method: {
+                    card: cardElement,
+                    billing_details: {
+                        email: document.getElementById('email').value,
+                        name: document.getElementById('firstName').value + ' ' + document.getElementById('lastName').value,
+                        address: {
+                            line1: document.getElementById('address').value,
+                            city: document.getElementById('city').value,
+                            state: document.getElementById('state').value,
+                            postal_code: document.getElementById('zip').value,
+                            country: 'US'
+                        }
+                    }
+                }
+            });
+            
+            if (result.error) {
+                // Show error to customer
+                document.getElementById('card-errors').textContent = result.error.message;
+                submitButton.disabled = false;
+                submitButton.innerHTML = '<i class="fas fa-lock"></i> Pay ${{ total_price }}';
+            } else {
+                // Payment succeeded
+                window.location.href = '{% url "shop:payment_success" %}?payment_intent=' + result.paymentIntent.id;
+            }
+            
+        } catch (error) {
+            document.getElementById('card-errors').textContent = error.message;
+            submitButton.disabled = false;
+            submitButton.innerHTML = '<i class="fas fa-lock"></i> Pay ${{ total_price }}';
+        }
+    });
+    
+    // Handle real-time validation errors from the card Element
+    cardElement.addEventListener('change', (event) => {
+        const displayError = document.getElementById('card-errors');
+        if (event.error) {
+            displayError.textContent = event.error.message;
+        } else {
+            displayError.textContent = '';
+        }
+    });
+</script>
+{% endblock %} 

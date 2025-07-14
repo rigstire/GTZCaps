@@ -132,3 +132,7 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Stripe Settings
+STRIPE_PUBLISHABLE_KEY = os.getenv('STRIPE_PUBLISHABLE_KEY', 'pk_live_51RkBRZAyXnlVGbyz9dLB8dEzZiY8zqCFuIWshWp2ABuAKXOBwSN2d6ZOMW7GHU7xMviOCIfHygpIivQPJBBFtPc000DTDrfFkm')
+STRIPE_SECRET_KEY = os.getenv('STRIPE_SECRET_KEY', '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')

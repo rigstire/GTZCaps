@@ -108,9 +108,9 @@
                     </div>
                     
                     <div class="d-grid gap-3">
-                        <button class="btn btn-success btn-lg" onclick="alert('Checkout functionality coming soon!')" style="padding: 15px; font-size: 1.2rem; font-weight: 700;">
+                        <a href="{% url 'shop:checkout' %}" class="btn btn-success btn-lg" style="padding: 15px; font-size: 1.2rem; font-weight: 700;">
                             <i class="fas fa-credit-card"></i> PROCEED TO CHECKOUT
-                        </button>
+                        </a>
                         <a href="{% url 'shop:home' %}" class="btn btn-outline-primary btn-lg">
                             <i class="fas fa-arrow-left"></i> CONTINUE SHOPPING
                         </a>
