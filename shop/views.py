@@ -276,32 +276,4 @@ def payment_cancel(request):
     messages.warning(request, "Payment was cancelled.")
     return redirect('shop:cart')
 
-# Simple static file serving for Vercel
-import os
-import mimetypes
-from django.http import HttpResponse, Http404
-from django.conf import settings
 
-def serve_static(request, path):
-    """Simple static file serving for Vercel deployment"""
-    if not settings.DEBUG and not os.getenv('VERCEL'):
-        raise Http404("Static files not served in production")
-    
-    # Look for static files in collected static files directory
-    static_file_path = os.path.join(settings.STATIC_ROOT, path)
-    
-    if not os.path.exists(static_file_path) or not os.path.isfile(static_file_path):
-        raise Http404("Static file not found")
-    
-    # Get the correct MIME type
-    content_type, _ = mimetypes.guess_type(static_file_path)
-    if content_type is None:
-        content_type = 'application/octet-stream'
-    
-    # Read and serve the file
-    try:
-        with open(static_file_path, 'rb') as f:
-            response = HttpResponse(f.read(), content_type=content_type)
-            return response
-    except IOError:
-        raise Http404("Could not read static file")

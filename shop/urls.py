@@ -13,6 +13,5 @@ urlpatterns = [
     path('update-cart/<int:hat_id>/', views.update_cart_quantity, name='update_cart'),
     path('checkout/', views.checkout, name='checkout'),
     path('payment-success/', views.payment_success, name='payment_success'),
-    # Static file serving for Vercel
-    path('static/<path:path>', views.serve_static, name='serve_static'),
+
 ] 
