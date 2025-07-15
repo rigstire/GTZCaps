@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 import os
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,13 +25,14 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = 'django-insecure-!mc*$o8_uuu=yfjj!tul-yl+m1+t)+ut98ryf1_5ef##e7sjga'
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = not os.getenv('VERCEL', False)
 
 ALLOWED_HOSTS = [
     'localhost',
     '127.0.0.1',
     '192.200.200.248',  # Your local IP address
     '0.0.0.0',
+    '.vercel.app',  # Allow all Vercel domains
     '*',  # Allow all hosts (only for development)
 ]
 
@@ -89,6 +91,23 @@ DATABASES = {
     }
 }
 
+# Production database configuration
+if os.getenv('DATABASE_URL'):
+    DATABASES['default'] = dj_database_url.parse(os.getenv('DATABASE_URL'))
+
+# Force PostgreSQL for production
+if os.getenv('VERCEL'):
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'verceldb'),
+            'USER': os.getenv('POSTGRES_USER', 'default'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
+            'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
+            'PORT': os.getenv('POSTGRES_PORT', '5432'),
+        }
+    }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators
@@ -124,11 +143,16 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
-STATIC_URL = 'static/'
+STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'static'),
 ]
+
+# Production static files
+if os.getenv('VERCEL'):
+    STATIC_URL = '/static/'
+    STATIC_ROOT = '/tmp/staticfiles'
 
 # Media files (User uploads)
 MEDIA_URL = '/media/'

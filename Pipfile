@@ -8,6 +8,7 @@ django = "*"
 pillow = "*"
 stripe = "*"
 python-dotenv = "*"
+gunicorn = "*"
 
 [dev-packages]
 
