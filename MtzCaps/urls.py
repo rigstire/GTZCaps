@@ -18,12 +18,23 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+import os
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('shop.urls')),
+    path('', include('shop.urls')),  # Shop app as main site
 ]
 
-# Add media file serving for development
+# Serve media and static files
 if settings.DEBUG:
+    # Development: serve both media and static files
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+else:
+    # Production: serve static files from public directory if available
+    public_static_root = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'public', 'static')
+    if os.path.exists(public_static_root):
+        urlpatterns += static(settings.STATIC_URL, document_root=public_static_root)
+    else:
+        # Fallback to regular static root
+        urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

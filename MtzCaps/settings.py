@@ -46,6 +46,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    
+    'cloudinary_storage',
+    'cloudinary',
 
     'shop'
 ]
@@ -133,12 +136,23 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
+# Static files finders - ensure all static files are discovered
+STATICFILES_FINDERS = [
+    'django.contrib.staticfiles.finders.FileSystemFinder',
+    'django.contrib.staticfiles.finders.AppDirectoriesFinder',
+]
+
 # Static files configuration
 if os.getenv('VERCEL'):
     # Production static files configuration for Vercel
     STATIC_ROOT = '/tmp/staticfiles'
+    # Include shop static files even in Vercel environment
     STATICFILES_DIRS = []
-    # Standard static files storage for Vercel
+    # Add shop static directory if it exists
+    shop_static_dir = os.path.join(BASE_DIR, 'shop', 'static')
+    if os.path.exists(shop_static_dir):
+        STATICFILES_DIRS.append(shop_static_dir)
+    # Disable static files storage since Vercel has limitations
     STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 else:
     # Local development static files configuration
@@ -149,23 +163,44 @@ else:
     else:
         STATICFILES_DIRS = []
 
-# Media files (User uploads)
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# Cloudinary configuration
+import cloudinary
+import cloudinary.uploader
+import cloudinary.api
 
-# Production media files warning
+# Configure Cloudinary using CLOUDINARY_URL environment variable
+if os.getenv('CLOUDINARY_URL'):
+    cloudinary.config()
+else:
+    # Fallback for local development
+    cloudinary.config(
+        cloud_name='your-local-cloud-name',
+        api_key='your-local-api-key',
+        api_secret='your-local-api-secret'
+    )
+
+# Media files (User uploads)
 if os.getenv('VERCEL'):
-    # WARNING: Vercel doesn't support file uploads to local storage
-    # For production, you'll need to use external storage like:
-    # - AWS S3
-    # - Cloudinary  
-    # - Vercel Blob Storage
-    print("WARNING: Media files will not persist on Vercel. Consider using external storage.")
+    # Production: Use Cloudinary for media storage
+    DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+    MEDIA_URL = '/media/'  # This will be handled by Cloudinary
+else:
+    # Local development: Use local storage
+    MEDIA_URL = '/media/'
+    MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+# Site URL for absolute URLs in social media tags
+if os.getenv('VERCEL'):
+    # In production, this should be your actual domain
+    SITE_URL = 'https://your-vercel-app.vercel.app'  # Replace with your actual Vercel domain
+else:
+    # Local development
+    SITE_URL = 'http://localhost:8000'
 
 # Stripe Settings
 # WARNING: For production, move these to environment variables or a secure config system

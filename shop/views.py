@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import JsonResponse, HttpResponse
 from django.db.models import Q
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
@@ -8,6 +8,7 @@ from django.views.decorators.http import require_POST
 from django.templatetags.static import static
 import stripe
 import json
+import os
 from .models import Hat, Order
 
 # Create your views here.
@@ -276,4 +277,238 @@ def payment_cancel(request):
     messages.warning(request, "Payment was cancelled.")
     return redirect('shop:cart')
 
+def debug_static_files(request):
+    """Debug view to check static file paths and existence"""
+    if not settings.DEBUG and not os.getenv('VERCEL'):
+        return HttpResponse("Debug view not available", status=404)
+    
+    debug_info = {
+        'STATIC_URL': settings.STATIC_URL,
+        'STATIC_ROOT': settings.STATIC_ROOT,
+        'STATICFILES_DIRS': settings.STATICFILES_DIRS,
+        'DEBUG': settings.DEBUG,
+        'VERCEL': os.getenv('VERCEL', 'Not set'),
+    }
+    
+    # Test static file URLs and existence
+    test_files = [
+        'shop/images/logo.jpeg',
+        'shop/images/gtzbackground.png',
+        'shop/images/bigbosslogo.png',
+    ]
+    
+    file_info = {}
+    for file_path in test_files:
+        static_url = static(file_path)
+        
+        # Check different possible locations
+        locations = []
+        
+        # Check in STATIC_ROOT
+        if settings.STATIC_ROOT:
+            static_root_path = os.path.join(settings.STATIC_ROOT, file_path)
+            locations.append(f"STATIC_ROOT: {static_root_path} - Exists: {os.path.exists(static_root_path)}")
+        
+        # Check in public directory
+        public_path = os.path.join('public', 'static', file_path)
+        locations.append(f"public/static: {public_path} - Exists: {os.path.exists(public_path)}")
+        
+        # Check in alternative public path
+        alt_public_path = os.path.join('public', file_path)
+        locations.append(f"public: {alt_public_path} - Exists: {os.path.exists(alt_public_path)}")
+        
+        file_info[file_path] = {
+            'static_url': static_url,
+            'locations': locations
+        }
+    
+    # Create HTML response
+    html = f"""
+    <html>
+    <head><title>Static Files Debug</title></head>
+    <body>
+        <h1>Static Files Debug Information</h1>
+        <h2>Django Settings</h2>
+        <pre>{json.dumps(debug_info, indent=2)}</pre>
+        
+        <h2>File Information</h2>
+        <pre>{json.dumps(file_info, indent=2)}</pre>
+    </body>
+    </html>
+    """
+    
+    return HttpResponse(html)
 
+def test_social_media_tags(request):
+    """Test view to show how the site will appear when shared on social media"""
+    
+    # Get the logo URL
+    logo_url = request.build_absolute_uri(static('shop/images/logo.jpeg'))
+    
+    # Sample hat for testing
+    sample_hat = None
+    try:
+        sample_hat = Hat.objects.first()
+        if sample_hat and sample_hat.get_main_image_filename():
+            sample_hat_image = request.build_absolute_uri(static(f'shop/hat_images/{sample_hat.get_main_image_filename()}'))
+        else:
+            sample_hat_image = logo_url
+    except:
+        sample_hat_image = logo_url
+    
+    social_info = {
+        'site_name': 'GTZ CAPS',
+        'title': 'GTZ CAPS - Unleash Your Style',
+        'description': 'Premium Quality Caps. Discover our exclusive collection of stylish hats from top brands including Big Boss, Dandy Hats, and El Barbas Hats.',
+        'logo_url': logo_url,
+        'sample_hat_image': sample_hat_image,
+        'sample_hat': sample_hat.hat_name if sample_hat else 'No hats found',
+        'current_url': request.build_absolute_uri(),
+    }
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Social Media Preview Test</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; }}
+            .preview {{ border: 1px solid #ddd; padding: 20px; margin: 20px 0; border-radius: 8px; }}
+            .preview img {{ max-width: 300px; height: auto; border-radius: 4px; }}
+            .meta-info {{ background: #f5f5f5; padding: 15px; border-radius: 4px; margin: 10px 0; }}
+            pre {{ background: #f8f8f8; padding: 10px; overflow-x: auto; }}
+        </style>
+    </head>
+    <body>
+        <h1>Social Media Sharing Preview</h1>
+        
+        <div class="preview">
+            <h2>🏠 Homepage Preview</h2>
+            <img src="{logo_url}" alt="GTZ CAPS Logo">
+            <h3>{social_info['title']}</h3>
+            <p>{social_info['description']}</p>
+            <small>gtzcaps.com</small>
+        </div>
+        
+        <div class="preview">
+            <h2>🧢 Hat Detail Preview</h2>
+            <img src="{sample_hat_image}" alt="Sample Hat">
+            <h3>{social_info['sample_hat']} | GTZ CAPS</h3>
+            <p>Premium quality hat from GTZ CAPS.</p>
+            <small>gtzcaps.com/hat/1</small>
+        </div>
+        
+        <div class="meta-info">
+            <h3>Meta Tag Information</h3>
+            <pre>{json.dumps(social_info, indent=2)}</pre>
+        </div>
+        
+        <div class="meta-info">
+            <h3>How to Test:</h3>
+            <ol>
+                <li><strong>Facebook/Meta:</strong> Use <a href="https://developers.facebook.com/tools/debug/" target="_blank">Facebook Sharing Debugger</a></li>
+                <li><strong>Twitter/X:</strong> Use <a href="https://cards-dev.twitter.com/validator" target="_blank">Twitter Card Validator</a></li>
+                <li><strong>LinkedIn:</strong> Use <a href="https://www.linkedin.com/post-inspector/" target="_blank">LinkedIn Post Inspector</a></li>
+                <li><strong>General:</strong> Use <a href="https://www.opengraph.xyz/" target="_blank">Open Graph Checker</a></li>
+            </ol>
+            <p><strong>Note:</strong> After deployment, test with your actual domain URL to see the preview.</p>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return HttpResponse(html)
+
+def create_admin_user(request):
+    """Create a superuser for admin access - USE ONLY ONCE after deployment"""
+    from django.middleware.csrf import get_token
+    
+    if request.method == 'POST' and request.POST.get('confirm') == 'yes':
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        
+        # Check if superuser already exists
+        if User.objects.filter(is_superuser=True).exists():
+            existing_superuser = User.objects.filter(is_superuser=True).first()
+            message = f"❌ Superuser already exists: {existing_superuser.username}"
+            status = "error"
+        else:
+            # Create superuser
+            username = request.POST.get('username', 'admin')
+            email = request.POST.get('email', 'admin@gtzcaps.com')
+            password = request.POST.get('password', 'gtzcaps_admin_2024')
+            
+            try:
+                superuser = User.objects.create_superuser(
+                    username=username,
+                    email=email,
+                    password=password
+                )
+                message = f"✅ Superuser created! Username: {username}, Password: {password}"
+                status = "success"
+            except Exception as e:
+                message = f"❌ Error creating superuser: {e}"
+                status = "error"
+    else:
+        message = ""
+        status = ""
+    
+    # Get CSRF token
+    csrf_token = get_token(request)
+    
+    html = f"""
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Create Admin User - GTZ CAPS</title>
+        <style>
+            body {{ font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }}
+            .form {{ background: #f9f9f9; padding: 20px; border-radius: 8px; }}
+            .warning {{ background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0; }}
+            .success {{ background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 4px; margin: 20px 0; }}
+            .error {{ background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 4px; margin: 20px 0; }}
+            input, button {{ padding: 10px; margin: 5px 0; width: 100%; box-sizing: border-box; }}
+            button {{ background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }}
+            button:hover {{ background: #0056b3; }}
+        </style>
+    </head>
+    <body>
+        <h1>🔧 Create Admin User</h1>
+        
+        <div class="warning">
+            <strong>⚠️ Security Warning:</strong><br>
+            • Use this ONLY ONCE after initial deployment<br>
+            • Change the default password immediately<br>
+            • Delete this endpoint URL after use for security
+        </div>
+        
+        {f'<div class="{status}">{message}</div>' if message else ''}
+        
+        <div class="form">
+            <form method="post">
+                <input type="hidden" name="csrfmiddlewaretoken" value="{csrf_token}">
+                <h3>Create Superuser</h3>
+                <input type="text" name="username" placeholder="Username (default: admin)" value="admin">
+                <input type="email" name="email" placeholder="Email" value="admin@gtzcaps.com">
+                <input type="password" name="password" placeholder="Password (CHANGE THIS!)" value="gtzcaps_admin_2024">
+                <label>
+                    <input type="checkbox" name="confirm" value="yes" required> 
+                    I confirm I want to create an admin user
+                </label>
+                <button type="submit">Create Admin User</button>
+            </form>
+        </div>
+        
+        <div class="warning">
+            <h3>After Creating Admin User:</h3>
+            <ol>
+                <li>Visit <a href="/admin/">/admin/</a> to login</li>
+                <li>Change the password immediately</li>
+                <li>Remove this URL for security</li>
+            </ol>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return HttpResponse(html)

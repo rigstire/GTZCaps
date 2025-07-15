@@ -1,7 +1,13 @@
 {% extends 'shop/base.html' %}
 {% load static %}
 
-{% block title %}{{ category }} - GTZ CAPS{% endblock %}
+{% block title %}{{ category }} Hats - GTZ CAPS{% endblock %}
+
+{% block og_title %}{{ category }} Collection | GTZ CAPS{% endblock %}
+{% block og_description %}Explore our {{ category }} hat collection. {{ hats|length }} premium quality hat{{ hats|length|pluralize }} available at GTZ CAPS.{% endblock %}
+
+{% block twitter_title %}{{ category }} Collection | GTZ CAPS{% endblock %}
+{% block twitter_description %}Explore our {{ category }} hat collection. {{ hats|length }} premium quality hat{{ hats|length|pluralize }} available.{% endblock %}
 
 {% block content %}
 <!-- Hidden CSRF token for JavaScript -->

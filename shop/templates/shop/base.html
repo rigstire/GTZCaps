@@ -5,6 +5,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}GTZ CAPS - Unleash Your Style{% endblock %}</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="GTZ CAPS - Premium Quality Caps. Unleash Your Style with our exclusive hat collection featuring Big Boss, Dandy Hats, and El Barbas Hats.">
+    <meta name="keywords" content="caps, hats, premium hats, GTZ CAPS, Big Boss, Dandy Hats, El Barbas Hats, fashion, style">
+    <meta name="author" content="GTZ CAPS">
+    
+    <!-- Open Graph Meta Tags for Social Media Sharing -->
+    <meta property="og:site_name" content="GTZ CAPS">
+    <meta property="og:title" content="{% block og_title %}GTZ CAPS - Unleash Your Style{% endblock %}">
+    <meta property="og:description" content="{% block og_description %}Premium Quality Caps. Discover our exclusive collection of stylish hats from top brands including Big Boss, Dandy Hats, and El Barbas Hats.{% endblock %}">
+    <meta property="og:image" content="{% block og_image %}{% static 'shop/images/logo.jpeg' %}{% endblock %}">
+    <meta property="og:image:alt" content="GTZ CAPS Logo">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:type" content="website">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:site" content="@GTZCAPS">
+    <meta name="twitter:title" content="{% block twitter_title %}GTZ CAPS - Unleash Your Style{% endblock %}">
+    <meta name="twitter:description" content="{% block twitter_description %}Premium Quality Caps. Discover our exclusive collection of stylish hats.{% endblock %}">
+    <meta name="twitter:image" content="{% static 'shop/images/logo.jpeg' %}">
+    <meta name="twitter:image:alt" content="GTZ CAPS Logo">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/jpeg" href="{% static 'shop/images/logo.jpeg' %}">
+    <link rel="apple-touch-icon" href="{% static 'shop/images/logo.jpeg' %}">
+    
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Creepster&family=Metal+Mania&family=Nosifer&family=Changa:wght@400;600;700&display=swap" rel="stylesheet">
@@ -19,12 +47,13 @@
             --light-gray: #404040;
             --white: #ffffff;
             --silver: #c0c0c0;
+            --background-image: url("{% static 'shop/images/gtzbackground.png' %}");
         }
 
         body {
             background: 
                 linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(26, 26, 26, 0.8) 50%, rgba(0, 0, 0, 0.8) 100%),
-                url("{% static 'shop/images/gtzbackground.png' %}");
+                var(--background-image);
             background-size: cover;
             background-position: center top 10%;
             background-repeat: no-repeat;
@@ -889,6 +918,26 @@
     </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Ensure background image loads -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Fallback to ensure background image loads
+            const backgroundUrl = "{% static 'shop/images/gtzbackground.png' %}";
+            document.body.style.backgroundImage = 
+                `linear-gradient(135deg, rgba(0, 0, 0, 0.8) 0%, rgba(26, 26, 26, 0.8) 50%, rgba(0, 0, 0, 0.8) 100%), url("${backgroundUrl}")`;
+            
+            // Verify logo images are loaded
+            const logoImages = document.querySelectorAll('.logo-image, .partner-logo');
+            logoImages.forEach(img => {
+                img.onerror = function() {
+                    console.error('Failed to load image:', this.src);
+                    this.style.display = 'none';
+                };
+            });
+        });
+    </script>
+    
     {% block scripts %}
     {% endblock %}
 </body>

@@ -1,7 +1,14 @@
 {% extends 'shop/base.html' %}
 {% load static %}
 
-{% block title %}{{ hat.hat_name }} - GTZ CAPS{% endblock %}
+{% block title %}{{ hat.hat_name }} - {{ hat.hat_category }} - GTZ CAPS{% endblock %}
+
+{% block og_title %}{{ hat.hat_name }} - {{ hat.hat_category }} | GTZ CAPS{% endblock %}
+{% block og_description %}{{ hat.description|default:"Premium quality hat from GTZ CAPS." }} Price: ${{ hat.price }}{% endblock %}
+{% block og_image %}{% if hat.get_main_image_filename %}{% static 'shop/hat_images/'|add:hat.get_main_image_filename %}{% else %}{% static 'shop/images/logo.jpeg' %}{% endif %}{% endblock %}
+
+{% block twitter_title %}{{ hat.hat_name }} - {{ hat.hat_category }} | GTZ CAPS{% endblock %}
+{% block twitter_description %}{{ hat.description|default:"Premium quality hat from GTZ CAPS." }} Price: ${{ hat.price }}{% endblock %}
 
 {% block content %}
 <div class="row">
