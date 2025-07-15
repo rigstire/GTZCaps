@@ -9,6 +9,8 @@ pillow = "*"
 stripe = "*"
 python-dotenv = "*"
 gunicorn = "*"
+psycopg2-binary = "*"
+dj-database-url = "*"
 
 [dev-packages]
 

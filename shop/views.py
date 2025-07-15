@@ -5,6 +5,7 @@ from django.db.models import Q
 from django.conf import settings
 from django.views.decorators.csrf import csrf_exempt
 from django.views.decorators.http import require_POST
+from django.templatetags.static import static
 import stripe
 import json
 from .models import Hat, Order
@@ -28,18 +29,14 @@ def shop_home(request):
     return render(request, 'shop/home.html', context)
 
 def category_view(request, category):
-    """Display all hats in a specific category"""
+    """Display hats in a specific category"""
     hats = Hat.objects.filter(hat_category=category).order_by('hat_name')
-    
-    if not hats.exists():
-        messages.error(request, f"No hats found in category '{category}'")
-        return redirect('shop:home')
-    
     context = {
         'category': category,
         'hats': hats,
     }
     return render(request, 'shop/category.html', context)
+
 
 def hat_detail(request, hat_id):
     """Display individual hat details"""
@@ -74,12 +71,17 @@ def add_to_cart(request, hat_id):
         if hat_id_str in cart:
             cart[hat_id_str]['quantity'] += 1
         else:
+            # Use static URL for image instead of media URL
+            image_url = None
+            if hat.get_main_image_filename():
+                image_url = static(f'shop/hat_images/{hat.get_main_image_filename()}')
+            
             cart[hat_id_str] = {
                 'hat_name': hat.hat_name,
                 'hat_category': hat.hat_category,
                 'price': float(hat.price),
                 'quantity': 1,
-                'image_url': hat.hat_picture.url if hat.hat_picture else None
+                'image_url': image_url
             }
         
         # Save cart back to session
@@ -134,47 +136,52 @@ def remove_from_cart(request, hat_id):
         hat_id_str = str(hat_id)
         
         if hat_id_str in cart:
-            hat_name = cart[hat_id_str]['hat_name']
             del cart[hat_id_str]
             request.session['cart'] = cart
             request.session.modified = True
-            messages.success(request, f"{hat_name} removed from cart!")
+            messages.success(request, "Item removed from cart!")
         
         return redirect('shop:cart')
     
     return redirect('shop:cart')
 
 def update_cart_quantity(request, hat_id):
-    """Update quantity of a hat in the cart"""
+    """Update the quantity of a hat in the cart"""
     if request.method == 'POST':
         cart = request.session.get('cart', {})
         hat_id_str = str(hat_id)
-        quantity = int(request.POST.get('quantity', 1))
         
-        if hat_id_str in cart and quantity > 0:
-            cart[hat_id_str]['quantity'] = quantity
-            request.session['cart'] = cart
-            request.session.modified = True
-            messages.success(request, "Cart updated!")
-        elif quantity <= 0:
-            return remove_from_cart(request, hat_id)
+        if hat_id_str in cart:
+            try:
+                new_quantity = int(request.POST.get('quantity', 1))
+                if new_quantity > 0:
+                    cart[hat_id_str]['quantity'] = new_quantity
+                    request.session['cart'] = cart
+                    request.session.modified = True
+                    messages.success(request, "Cart updated!")
+                else:
+                    del cart[hat_id_str]
+                    request.session['cart'] = cart
+                    request.session.modified = True
+                    messages.success(request, "Item removed from cart!")
+            except ValueError:
+                messages.error(request, "Invalid quantity!")
         
         return redirect('shop:cart')
     
     return redirect('shop:cart')
 
-# Set up Stripe
+# Set up Stripe API key
 stripe.api_key = settings.STRIPE_SECRET_KEY
 
 def checkout(request):
-    """Display checkout page with Stripe payment"""
+    """Display checkout page with cart items"""
     cart = request.session.get('cart', {})
     
     if not cart:
-        messages.error(request, "Your cart is empty!")
+        messages.warning(request, "Your cart is empty!")
         return redirect('shop:cart')
     
-    # Calculate totals
     cart_items = []
     total_price = 0
     
@@ -187,7 +194,6 @@ def checkout(request):
             'price': item['price'],
             'quantity': item['quantity'],
             'total': item_total,
-            'image_url': item.get('image_url')
         })
         total_price += item_total
     
@@ -195,14 +201,13 @@ def checkout(request):
         'cart_items': cart_items,
         'total_price': total_price,
         'stripe_publishable_key': settings.STRIPE_PUBLISHABLE_KEY,
-        'total_cents': int(total_price * 100)  # Stripe uses cents
     }
     return render(request, 'shop/checkout.html', context)
 
 @csrf_exempt
 @require_POST
 def create_payment_intent(request):
-    """Create a Stripe PaymentIntent and save customer information"""
+    """Create a Stripe PaymentIntent for the cart total"""
     try:
         data = json.loads(request.body)
         cart = request.session.get('cart', {})
@@ -210,44 +215,26 @@ def create_payment_intent(request):
         if not cart:
             return JsonResponse({'error': 'Cart is empty'}, status=400)
         
-        # Calculate total
-        total_price = sum(item['price'] * item['quantity'] for item in cart.values())
+        # Calculate total amount
+        total_amount = 0
+        for item in cart.values():
+            total_amount += item['price'] * item['quantity']
+        
+        # Convert to cents for Stripe
+        amount_cents = int(total_amount * 100)
         
         # Create PaymentIntent
         intent = stripe.PaymentIntent.create(
-            amount=int(total_price * 100),  # Amount in cents
+            amount=amount_cents,
             currency='usd',
             metadata={
-                'cart_items': json.dumps(cart),
+                'cart_data': json.dumps(cart),
                 'customer_email': data.get('email', ''),
-                'customer_name': data.get('firstName', '') + ' ' + data.get('lastName', ''),
-                'customer_address': data.get('address', ''),
-                'customer_city': data.get('city', ''),
-                'customer_state': data.get('state', ''),
-                'customer_zip': data.get('zip', ''),
             }
         )
         
-        # Save customer information to database
-        order = Order.objects.create(
-            email=data.get('email', ''),
-            first_name=data.get('firstName', ''),
-            last_name=data.get('lastName', ''),
-            address=data.get('address', ''),
-            city=data.get('city', ''),
-            state=data.get('state', ''),
-            zip_code=data.get('zip', ''),
-            country='US',
-            stripe_payment_intent_id=intent.id,
-            total_amount=total_price,
-            currency='USD',
-            payment_status='pending',
-            order_items=cart
-        )
-        
         return JsonResponse({
-            'client_secret': intent.client_secret,
-            'order_id': order.id
+            'client_secret': intent.client_secret
         })
         
     except Exception as e:
@@ -255,34 +242,66 @@ def create_payment_intent(request):
 
 def payment_success(request):
     """Handle successful payment"""
-    # Get payment intent ID from query parameters
     payment_intent_id = request.GET.get('payment_intent')
     
     if payment_intent_id:
         try:
-            # Update order status to completed
-            order = Order.objects.get(stripe_payment_intent_id=payment_intent_id)
-            order.payment_status = 'completed'
-            order.save()
+            # Retrieve the PaymentIntent from Stripe
+            intent = stripe.PaymentIntent.retrieve(payment_intent_id)
             
-            # Store order ID in session for display
-            request.session['last_order_id'] = order.id
+            if intent.status == 'succeeded':
+                # Clear the cart
+                if 'cart' in request.session:
+                    del request.session['cart']
+                    request.session.modified = True
+                
+                # You could create an Order record here if needed
+                # For now, just show success message
+                messages.success(request, "Payment successful! Thank you for your order!")
+                
+                context = {
+                    'payment_intent_id': payment_intent_id,
+                    'amount': intent.amount / 100,  # Convert back from cents
+                }
+                return render(request, 'shop/payment_success.html', context)
             
-        except Order.DoesNotExist:
-            pass  # Handle gracefully if order not found
+        except stripe.error.StripeError as e:
+            messages.error(request, f"Payment verification failed: {e}")
     
-    # Clear the cart
-    request.session['cart'] = {}
-    request.session.modified = True
-    
-    messages.success(request, "Payment successful! Thank you for your purchase!")
-    
-    context = {
-        'success': True
-    }
-    return render(request, 'shop/payment_success.html', context)
+    messages.error(request, "Payment verification failed!")
+    return redirect('shop:cart')
 
 def payment_cancel(request):
     """Handle cancelled payment"""
-    messages.error(request, "Payment was cancelled. Your cart is still available.")
+    messages.warning(request, "Payment was cancelled.")
     return redirect('shop:cart')
+
+# Simple static file serving for Vercel
+import os
+import mimetypes
+from django.http import HttpResponse, Http404
+from django.conf import settings
+
+def serve_static(request, path):
+    """Simple static file serving for Vercel deployment"""
+    if not settings.DEBUG and not os.getenv('VERCEL'):
+        raise Http404("Static files not served in production")
+    
+    # Look for static files in collected static files directory
+    static_file_path = os.path.join(settings.STATIC_ROOT, path)
+    
+    if not os.path.exists(static_file_path) or not os.path.isfile(static_file_path):
+        raise Http404("Static file not found")
+    
+    # Get the correct MIME type
+    content_type, _ = mimetypes.guess_type(static_file_path)
+    if content_type is None:
+        content_type = 'application/octet-stream'
+    
+    # Read and serve the file
+    try:
+        with open(static_file_path, 'rb') as f:
+            response = HttpResponse(f.read(), content_type=content_type)
+            return response
+    except IOError:
+        raise Http404("Could not read static file")

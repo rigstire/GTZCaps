@@ -29,6 +29,31 @@ class Hat(models.Model):
     def is_available(self):
         """Returns True if the hat is not sold out"""
         return not self.sold_out
+    
+    # Simple filename extraction methods for static file mapping
+    def get_main_image_filename(self):
+        """Get filename of the main hat image"""
+        if self.hat_picture:
+            return self.hat_picture.name.split('/')[-1]
+        return None
+    
+    def get_description_pic1_filename(self):
+        """Get filename of description image 1"""
+        if self.description_pic1:
+            return self.description_pic1.name.split('/')[-1]
+        return None
+    
+    def get_description_pic2_filename(self):
+        """Get filename of description image 2"""
+        if self.description_pic2:
+            return self.description_pic2.name.split('/')[-1]
+        return None
+    
+    def get_description_pic3_filename(self):
+        """Get filename of description image 3"""
+        if self.description_pic3:
+            return self.description_pic3.name.split('/')[-1]
+        return None
 
 class Order(models.Model):
     # Customer Information

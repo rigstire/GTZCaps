@@ -1,8 +1,12 @@
 {% extends 'shop/base.html' %}
+{% load static %}
 
 {% block title %}GTZ CAPS - Unleash Your Style{% endblock %}
 
 {% block content %}
+<!-- Hidden CSRF token for JavaScript -->
+{% csrf_token %}
+
 <div class="row">
     <div class="col-12 text-center">
         <h1 class="display-4">
@@ -33,8 +37,8 @@
                 <div class="col-md-4 col-lg-3 mb-4">
                     <div class="hat-image-card" onclick="location.href='{% url 'shop:hat_detail' hat.id %}'">
                         <!-- Hat Image -->
-                        {% if hat.hat_picture %}
-                            <img src="{{ hat.hat_picture.url }}" alt="{{ hat.hat_name }}">
+                        {% if hat.get_main_image_filename %}
+                            <img src="{% static 'shop/hat_images/'|add:hat.get_main_image_filename %}" alt="{{ hat.hat_name }}">
                         {% else %}
                             <div class="hat-image-placeholder">
                                 <i class="fas fa-hat-wizard fa-4x"></i>
@@ -69,21 +73,14 @@
     {% endfor %}
 {% else %}
     <div class="row">
-        <div class="col-12">
-            <div class="card text-center" style="background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray)); border: 2px solid var(--primary-red);">
-                <div class="card-body py-5">
-                    <i class="fas fa-hat-wizard fa-5x text-muted mb-4" style="color: var(--primary-red); opacity: 0.5;"></i>
-                    <h4 style="color: var(--primary-red); font-family: 'Metal Mania', cursive;">
-                        NO HATS AVAILABLE
-                    </h4>
-                    <p class="text-muted mb-4">The collection is being prepared... Check back soon for our demonic hat drops!</p>
-                    <a href="{% url 'shop:home' %}" class="btn btn-outline-primary btn-lg">
-                        <i class="fas fa-sync-alt"></i> REFRESH PAGE
-                    </a>
-                </div>
+        <div class="col-12 text-center">
+            <div class="alert alert-warning" role="alert" style="background: linear-gradient(135deg, #333333, #555555); border: 2px solid var(--primary-red); color: var(--white);">
+                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                <h4>No Hats Available</h4>
+                <p>Check back soon for new arrivals!</p>
             </div>
         </div>
-    </div>  
+    </div>
 {% endif %}
 
 <!-- Featured Section -->
@@ -123,45 +120,69 @@
 {% block scripts %}
 <script>
 function addToCart(hatId) {
-    // Create a form and submit it
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `/add-to-cart/${hatId}/`;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
-    // Add CSRF token
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (csrfToken) {
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = csrfToken.value;
-        form.appendChild(csrfInput);
-    } else {
-        // Try to get CSRF token from cookie
-        const csrfCookie = document.cookie.split(';').find(row => row.trim().startsWith('csrftoken='));
-        if (csrfCookie) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrfCookie.split('=')[1];
-            form.appendChild(csrfInput);
+    fetch('/add-to-cart/' + hatId + '/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
         }
-    }
-    
-    document.body.appendChild(form);
-    form.submit();
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const toast = document.createElement('div');
+            toast.className = 'toast-message success';
+            toast.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+            document.body.appendChild(toast);
+            
+            // Update cart count if it exists
+            const cartBadge = document.querySelector('.cart-badge');
+            if (cartBadge) {
+                cartBadge.textContent = data.cart_count;
+            }
+            
+            // Remove toast after 3 seconds
+            setTimeout(function() {
+                toast.remove();
+            }, 3000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+}
+</script>
+
+<style>
+.toast-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    z-index: 9999;
+    animation: slideIn 0.3s ease;
 }
 
-// Add CSRF token to the page for the add to cart function
-document.addEventListener('DOMContentLoaded', function() {
-    // Create a hidden CSRF token input if it doesn't exist
-    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = '{{ csrf_token }}';
-        document.body.appendChild(csrfInput);
+.toast-message.success {
+    background: linear-gradient(135deg, var(--primary-red), var(--blood-red));
+    border: 2px solid var(--white);
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
     }
-});
-</script>
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+</style>
 {% endblock %} 

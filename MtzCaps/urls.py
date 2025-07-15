@@ -18,13 +18,18 @@ from django.contrib import admin
 from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
+import os
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('shop.urls')),  # Shop app as main site
+    path('', include('shop.urls')),
 ]
 
-# Serve media and static files during development
-if settings.DEBUG:
+# Add static file serving for Vercel
+if settings.DEBUG or os.getenv('VERCEL'):
+    from shop.views import serve_static
+    urlpatterns += [
+        path('static/<path:path>', serve_static, name='serve_static'),
+    ]
+    # Also serve media files in development
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)

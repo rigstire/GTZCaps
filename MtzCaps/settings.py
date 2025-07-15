@@ -22,7 +22,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-!mc*$o8_uuu=yfjj!tul-yl+m1+t)+ut98ryf1_5ef##e7sjga'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-!mc*$o8_uuu=yfjj!tul-yl+m1+t)+ut98ryf1_5ef##e7sjga')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = not os.getenv('VERCEL', False)
@@ -84,6 +84,7 @@ WSGI_APPLICATION = 'MtzCaps.wsgi.application'
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
 
+# Default to SQLite for local development
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
@@ -91,22 +92,9 @@ DATABASES = {
     }
 }
 
-# Production database configuration
+# Use PostgreSQL for production (Vercel)
 if os.getenv('DATABASE_URL'):
     DATABASES['default'] = dj_database_url.parse(os.getenv('DATABASE_URL'))
-
-# Force PostgreSQL for production
-if os.getenv('VERCEL'):
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.getenv('POSTGRES_DB', 'verceldb'),
-            'USER': os.getenv('POSTGRES_USER', 'default'),
-            'PASSWORD': os.getenv('POSTGRES_PASSWORD', ''),
-            'HOST': os.getenv('POSTGRES_HOST', 'localhost'),
-            'PORT': os.getenv('POSTGRES_PORT', '5432'),
-        }
-    }
 
 
 # Password validation
@@ -144,19 +132,35 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/4.2/howto/static-files/
 
 STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
 
-# Production static files
+# Static files configuration
 if os.getenv('VERCEL'):
-    STATIC_URL = '/static/'
+    # Production static files configuration for Vercel
     STATIC_ROOT = '/tmp/staticfiles'
+    STATICFILES_DIRS = []
+    # Standard static files storage for Vercel
+    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+else:
+    # Local development static files configuration
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    static_dir = os.path.join(BASE_DIR, 'static')
+    if os.path.exists(static_dir):
+        STATICFILES_DIRS = [static_dir]
+    else:
+        STATICFILES_DIRS = []
 
 # Media files (User uploads)
 MEDIA_URL = '/media/'
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+
+# Production media files warning
+if os.getenv('VERCEL'):
+    # WARNING: Vercel doesn't support file uploads to local storage
+    # For production, you'll need to use external storage like:
+    # - AWS S3
+    # - Cloudinary  
+    # - Vercel Blob Storage
+    print("WARNING: Media files will not persist on Vercel. Consider using external storage.")
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/4.2/ref/settings/#default-auto-field

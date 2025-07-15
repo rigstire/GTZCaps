@@ -1,29 +1,25 @@
 {% extends 'shop/base.html' %}
+{% load static %}
 
 {% block title %}{{ category }} - GTZ CAPS{% endblock %}
 
 {% block content %}
+<!-- Hidden CSRF token for JavaScript -->
+{% csrf_token %}
+
 <div class="row">
-    <div class="col-12">
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb">
-                <li class="breadcrumb-item">
-                    <a href="{% url 'shop:home' %}">
-                        <i class="fas fa-home"></i> Home
-                    </a>
-                </li>
-                <li class="breadcrumb-item active" aria-current="page">
-                    {{ category }}
-                </li>
-            </ol>
-        </nav>
-        
-        <h1 class="display-4 mb-4">
-            {{ category }}
-            <small class="text-muted ms-3" style="font-size: 1.5rem; font-family: 'Changa', sans-serif;">
-                ({{ hats|length }} hat{{ hats|length|pluralize }} available)
-            </small>
+    <div class="col-12 text-center">
+        <h1 class="display-4 mb-3">
+            <i class="fas fa-hat-wizard"></i> {{ category }}
         </h1>
+        <div class="mb-4">
+            <a href="{% url 'shop:home' %}" class="btn btn-outline-primary btn-lg me-3">
+                <i class="fas fa-arrow-left"></i> BACK TO COLLECTION
+            </a>
+            <span class="badge" style="background: linear-gradient(135deg, var(--primary-red), var(--blood-red)); font-size: 1.2rem; padding: 12px 24px;">
+                {{ hats|length }} Hat{{ hats|length|pluralize }} Available
+            </span>
+        </div>
     </div>
 </div>
 
@@ -45,8 +41,8 @@
                     </div>
                     
                     <!-- Hat Image -->
-                    {% if hat.hat_picture %}
-                        <img src="{{ hat.hat_picture.url }}" alt="{{ hat.hat_name }}">
+                    {% if hat.get_main_image_filename %}
+                        <img src="{% static 'shop/hat_images/'|add:hat.get_main_image_filename %}" alt="{{ hat.hat_name }}">
                     {% else %}
                         <div class="hat-image-placeholder">
                             <i class="fas fa-hat-wizard fa-4x"></i>
@@ -78,31 +74,16 @@
             </div>
         {% endfor %}
     </div>
-    
-    <!-- Back to Home -->
-    <div class="row mt-5">
-        <div class="col-12 text-center">
-            <a href="{% url 'shop:home' %}" class="btn btn-outline-primary btn-lg" style="padding: 15px 30px; font-size: 1.2rem; font-weight: 700;">
-                <i class="fas fa-arrow-left"></i> BACK TO ALL CATEGORIES
-            </a>
-        </div>
-    </div>
 {% else %}
     <div class="row">
-        <div class="col-12">
-            <div class="card text-center" style="border: 2px solid var(--primary-red); background: linear-gradient(135deg, var(--dark-gray), var(--medium-gray));">
-                <div class="card-body py-5">
-                    <i class="fas fa-hat-wizard fa-5x mb-4" style="color: var(--primary-red); opacity: 0.5;"></i>
-                    <h4 style="color: var(--primary-red); font-family: 'Metal Mania', cursive; font-size: 2.5rem;">
-                        NO HATS FOUND
-                    </h4>
-                    <p class="text-muted mb-4" style="color: var(--silver) !important; font-size: 1.2rem;">
-                        There are currently no hats in the "{{ category }}" category.
-                    </p>
-                    <a href="{% url 'shop:home' %}" class="btn btn-primary btn-lg" style="padding: 15px 30px; font-size: 1.2rem; font-weight: 700;">
-                        BROWSE ALL HATS
-                    </a>
-                </div>
+        <div class="col-12 text-center">
+            <div class="alert alert-warning" role="alert" style="background: linear-gradient(135deg, #333333, #555555); border: 2px solid var(--primary-red); color: var(--white);">
+                <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                <h4>No Hats Found</h4>
+                <p>No hats available in the "{{ category }}" category.</p>
+                <a href="{% url 'shop:home' %}" class="btn btn-outline-primary mt-3">
+                    <i class="fas fa-arrow-left"></i> BACK TO COLLECTION
+                </a>
             </div>
         </div>
     </div>
@@ -112,45 +93,39 @@
 {% block scripts %}
 <script>
 function addToCart(hatId) {
-    // Create a form and submit it
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `/add-to-cart/${hatId}/`;
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
     
-    // Add CSRF token
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
-    if (csrfToken) {
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = csrfToken.value;
-        form.appendChild(csrfInput);
-    } else {
-        // Try to get CSRF token from cookie
-        const csrfCookie = document.cookie.split(';').find(row => row.trim().startsWith('csrftoken='));
-        if (csrfCookie) {
-            const csrfInput = document.createElement('input');
-            csrfInput.type = 'hidden';
-            csrfInput.name = 'csrfmiddlewaretoken';
-            csrfInput.value = csrfCookie.split('=')[1];
-            form.appendChild(csrfInput);
+    fetch('/add-to-cart/' + hatId + '/', {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
         }
-    }
-    
-    document.body.appendChild(form);
-    form.submit();
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success message
+            const toast = document.createElement('div');
+            toast.className = 'toast-message success';
+            toast.innerHTML = '<i class="fas fa-check-circle"></i> ' + data.message;
+            document.body.appendChild(toast);
+            
+            // Update cart count if it exists
+            const cartBadge = document.querySelector('.cart-badge');
+            if (cartBadge) {
+                cartBadge.textContent = data.cart_count;
+            }
+            
+            // Remove toast after 3 seconds
+            setTimeout(function() {
+                toast.remove();
+            }, 3000);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
 }
-
-// Add CSRF token to the page for the add to cart function
-document.addEventListener('DOMContentLoaded', function() {
-    // Create a hidden CSRF token input if it doesn't exist
-    if (!document.querySelector('[name=csrfmiddlewaretoken]')) {
-        const csrfInput = document.createElement('input');
-        csrfInput.type = 'hidden';
-        csrfInput.name = 'csrfmiddlewaretoken';
-        csrfInput.value = '{{ csrf_token }}';
-        document.body.appendChild(csrfInput);
-    }
-});
 </script>
 {% endblock %} 
