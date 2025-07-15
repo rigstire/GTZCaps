@@ -164,28 +164,34 @@ else:
         STATICFILES_DIRS = []
 
 # Cloudinary configuration
-import cloudinary
-import cloudinary.uploader
-import cloudinary.api
-
-# Configure Cloudinary using CLOUDINARY_URL environment variable
-if os.getenv('CLOUDINARY_URL'):
-    cloudinary.config()
-else:
-    # Fallback for local development
-    cloudinary.config(
-        cloud_name='your-local-cloud-name',
-        api_key='your-local-api-key',
-        api_secret='your-local-api-secret'
-    )
+try:
+    import cloudinary
+    import cloudinary.uploader
+    import cloudinary.api
+    
+    # Configure Cloudinary using CLOUDINARY_URL environment variable
+    if os.getenv('CLOUDINARY_URL'):
+        cloudinary.config()
+    else:
+        # Fallback for local development
+        cloudinary.config(
+            cloud_name='your-local-cloud-name',
+            api_key='your-local-api-key',
+            api_secret='your-local-api-secret'
+        )
+    CLOUDINARY_AVAILABLE = True
+except ImportError:
+    # Cloudinary not installed, will use local storage
+    CLOUDINARY_AVAILABLE = False
+    print("Cloudinary not available, using local storage")
 
 # Media files (User uploads)
-if os.getenv('VERCEL'):
+if os.getenv('VERCEL') and CLOUDINARY_AVAILABLE:
     # Production: Use Cloudinary for media storage
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
     MEDIA_URL = '/media/'  # This will be handled by Cloudinary
 else:
-    # Local development: Use local storage
+    # Local development or fallback: Use local storage
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
